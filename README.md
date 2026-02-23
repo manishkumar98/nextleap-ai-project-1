@@ -10,6 +10,14 @@ Experience hyper-personalized dining recommendations powered by Groq LLM and the
 - **Live UI**: A modern, responsive web interface with visual feedback for different search modes.
 - **Safe Mode**: Automatic visual dimming of filters when a text prompt is entered to ensure search clarity.
 
+## 🖼️ UI Preview
+
+![AI Restaurant Scout UI](docs/images/ui_preview.png)
+*Modern Glassmorphism UI with natural language search*
+
+![Search Results Adherence](docs/images/search_results.png)
+*Accurate budget-filtered results powered by Groq LLM*
+
 ## 🏗️ Architecture
 
 The project is organized into clear phases:
