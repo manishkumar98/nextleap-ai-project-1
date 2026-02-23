@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Restaurant Scout | Smart Recommendations</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .search-orb,
+        .filters-grid {
+            transition: all 0.3s ease;
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Restaurant Scout</h1>
+            <p class="subtitle">Experience hyper-personalized dining recommendations powered by AI.</p>
+        </header>
+
+        <section class="search-section">
+            <div class="search-orb">
+                <div class="input-group">
+                    <input type="text" id="queryInput"
+                        placeholder="Describe your craving, e.g., 'Cheap North Indian buffet with good vibes'...">
+                    <button class="search-btn" id="searchBtn">
+                        <i class="fas fa-search"></i> Scout
+                    </button>
+                </div>
+
+                <div class="filters-grid">
+                    <div class="filter-item">
+                        <span class="filter-label"><i class="fas fa-map-marker-alt"></i> Location</span>
+                        <select id="locationFilter">
+                            <option value="">Scouting Everywhere...</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label"><i class="fas fa-star"></i> Rating Range</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="minRatingInput" placeholder="Min (e.g. 4)"
+                                style="min-width: 0; width: 45%;">
+                            <input type="text" id="maxRatingInput" placeholder="Max (e.g. 5)"
+                                style="min-width: 0; width: 45%;">
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label"><i class="fas fa-utensils"></i> Cuisine</span>
+                        <select id="cuisineFilter">
+                            <option value="">Any Cuisine</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label"><i class="fas fa-wallet"></i> Budget Range (Two)</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="minBudgetInput" placeholder="Min" style="min-width: 0; width: 45%;">
+                            <input type="text" id="maxBudgetInput" placeholder="Max" style="min-width: 0; width: 45%;">
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label"><i class="fas fa-plus-circle"></i> Extras</span>
+                        <div class="checkbox-group">
+                            <label class="toggle-btn">
+                                <input type="checkbox" id="buffetToggle">
+                                <div class="toggle-slider"></div>
+                                <span>Buffet</span>
+                            </label>
+                            <label class="toggle-btn">
+                                <input type="checkbox" id="deliveryToggle">
+                                <div class="toggle-slider"></div>
+                                <span>Delivery</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing flavors and finding the best spots...</p>
+            </div>
+            <div id="results" class="results-grid">
+                <!-- Cards will be injected here -->
+            </div>
+            <div id="emptyState" style="display:none; text-align:center; padding: 4rem;">
+                <i class="fas fa-utensils"
+                    style="font-size: 3rem; color: var(--border-color); margin-bottom: 1rem;"></i>
+                <p>No restaurants found matching your specific filters. Try broadening your search!</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_BASE}/locations`);
+                const locations = await response.json();
+                const select = document.getElementById('locationFilter');
+                select.innerHTML = '<option value="">All Locations</option>' +
+                    locations.map(loc => `<option value="${loc}">${loc}</option>`).join('');
+            } catch (err) {
+                console.error("Failed to load locations", err);
+            }
+        }
+
+        async function loadCuisines() {
+            try {
+                const response = await fetch(`${API_BASE}/cuisines`);
+                const cuisines = await response.json();
+                const select = document.getElementById('cuisineFilter');
+                select.innerHTML = '<option value="">Any Cuisine</option>' +
+                    cuisines.map(c => `<option value="${c}">${c}</option>`).join('');
+            } catch (err) {
+                console.error("Failed to load cuisines", err);
+            }
+        }
+
+        async function scout() {
+            const query = document.getElementById('queryInput').value;
+            const location = document.getElementById('locationFilter').value;
+            const cuisine = document.getElementById('cuisineFilter').value;
+            const minRating = parseFloat(document.getElementById('minRatingInput').value);
+            const maxRating = parseFloat(document.getElementById('maxRatingInput').value);
+            const minBudget = parseInt(document.getElementById('minBudgetInput').value);
+            const maxBudget = parseInt(document.getElementById('maxBudgetInput').value);
+            const wantsBuffet = document.getElementById('buffetToggle').checked;
+            const wantsDelivery = document.getElementById('deliveryToggle').checked;
+
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+
+            // Show Loading
+            resultsDiv.classList.remove('visible');
+            loadingDiv.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/recommendations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query_text: query || "recommend restaurants",
+                        location: location || null,
+                        cuisines: cuisine ? [cuisine] : [],
+                        min_rating: minRating || null,
+                        max_rating: maxRating || null,
+                        min_price_for_two: minBudget || null,
+                        max_price_for_two: maxBudget || null,
+                        wants_buffet: wantsBuffet || null,
+                        wants_online_order: wantsDelivery || null,
+                        limit: 10
+                    })
+                });
+
+                const data = await response.json();
+                const recs = data.recommendations;
+
+                loadingDiv.style.display = 'none';
+
+                if (!recs || recs.length === 0) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                resultsDiv.innerHTML = recs.map(r => `
+                    <div class="restaurant-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">${r.name}</h3>
+                                <div class="card-location"><i class="fas fa-location-dot"></i> ${r.location}</div>
+                            </div>
+                            <div class="rating-badge">
+                                <i class="fas fa-star"></i> ${r.rating ? r.rating.toFixed(1) : 'N/A'}
+                            </div>
+                        </div>
+                        
+                        <div class="price-indicator">
+                            ₹${r.approx_cost_for_two} for two
+                        </div>
+
+                        <div class="cuisine-tags">
+                            ${(r.cuisines || []).map(c => `<span class="tag">${c}</span>`).join('')}
+                        </div>
+
+                        <div class="reason-box">
+                            <strong>Why this?</strong><br>
+                            ${r.reason}
+                        </div>
+                    </div>
+                `).join('');
+
+                resultsDiv.style.display = 'grid';
+                setTimeout(() => resultsDiv.classList.add('visible'), 50);
+
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+                loadingDiv.style.display = 'none';
+                alert('Oops! Could not connect to the API. Make sure the server is running on port 8001.');
+            }
+        }
+
+        // Mode management logic
+        const queryInput = document.getElementById('queryInput');
+        const filtersGrid = document.querySelector('.filters-grid');
+        const searchBtn = document.getElementById('searchBtn');
+
+        function setMode(mode) {
+            if (mode === 'prompt') {
+                filtersGrid.style.opacity = '0.4';
+                filtersGrid.style.pointerEvents = 'none';
+                queryInput.parentElement.style.boxShadow = '0 0 20px var(--accent-color)';
+            } else {
+                filtersGrid.style.opacity = '1';
+                filtersGrid.style.pointerEvents = 'auto';
+                queryInput.parentElement.style.boxShadow = 'none';
+            }
+        }
+
+        queryInput.addEventListener('input', () => {
+            if (queryInput.value.trim().length > 0) {
+                setMode('prompt');
+            } else {
+                setMode('filter');
+            }
+        });
+
+        // If any filter is changed, clear the prompt
+        const filterElements = [
+            'locationFilter', 'minRatingInput', 'maxRatingInput',
+            'cuisineFilter', 'minBudgetInput', 'maxBudgetInput',
+            'buffetToggle', 'deliveryToggle'
+        ];
+
+        filterElements.forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if (queryInput.value.trim().length > 0) {
+                    queryInput.value = '';
+                    setMode('filter');
+                }
+            });
+            // Also for text inputs in filters
+            if (id.includes('Input') && id !== 'queryInput') {
+                document.getElementById(id).addEventListener('input', () => {
+                    if (queryInput.value.trim().length > 0) {
+                        queryInput.value = '';
+                        setMode('filter');
+                    }
+                });
+            }
+        });
+
+        searchBtn.addEventListener('click', scout);
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') scout();
+        });
+
+        // Initialize
+        loadLocations();
+        loadCuisines();
+        scout();
+    </script>
+</body>
+
+</html>
