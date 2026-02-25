@@ -128,5 +128,5 @@ venv.bak/
 
 # Project specific
 apikeys
-zomato_restaurants.db
+# zomato_restaurants.db
 .DS_Store
