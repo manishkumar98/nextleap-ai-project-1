@@ -144,6 +144,23 @@ st.markdown("""
 def run_sync(coro):
     return asyncio.run(coro)
 
+# Caching database calls for performance and stability
+@st.cache_data(show_spinner="Loading locations...")
+def fetch_locations():
+    try:
+        return get_distinct_locations()
+    except Exception as e:
+        st.error(f"Error loading locations: {e}")
+        return []
+
+@st.cache_data(show_spinner="Loading cuisines...")
+def fetch_cuisines():
+    try:
+        return get_distinct_cuisines()
+    except Exception as e:
+        st.error(f"Error loading cuisines: {e}")
+        return []
+
 # Initialize Session State
 if 'search_results' not in st.session_state:
     st.session_state.search_results = []
@@ -159,10 +176,10 @@ with st.sidebar:
     st.header("🔍 Filters")
     st.info("Tip: Leave the search bar empty to use these filters exclusively.")
     
-    locations = get_distinct_locations()
-    cuisines_list = get_distinct_cuisines()
+    locations = fetch_locations()
+    cuisines_list = fetch_cuisines()
     
-    selected_location = st.selectbox("Location", options=["Scouting Everywhere..."] + locations)
+    selected_location = st.selectbox("Location", options=["Scouting Everywhere..."] + locations if locations else ["Scouting Everywhere..."])
     location_val = None if selected_location == "Scouting Everywhere..." else selected_location
     
     selected_cuisine = st.multiselect("Cuisines", options=cuisines_list)
