@@ -87,6 +87,21 @@ class LLMOrchestrator:
         """
         lowered = query_text.lower()
         
+        # Location Extraction (Heuristic)
+        # We try to find if any known location is mentioned in the query
+        detected_location = location_hint
+        if not detected_location:
+            from phase4_retrieval.retrieval import get_distinct_locations, get_engine
+            # Note: In a production environment, you would cache this list
+            try:
+                known_locations = get_distinct_locations(get_engine())
+                for loc in known_locations:
+                    if loc.lower() in lowered:
+                        detected_location = loc
+                        break
+            except Exception:
+                pass
+
         # Cuisines (Heuristic)
         cuisines = []
         common_cuisines = ["north indian", "south indian", "chinese", "italian", "thai", "asian", "cafe", "desserts", "continental", "mexican"]
@@ -143,7 +158,7 @@ class LLMOrchestrator:
 
         return UserPreferences(
             query_text=query_text,
-            location=location_hint,
+            location=detected_location,
             cuisines=cuisines,
             min_rating=min_rating,
             max_rating=max_rating,
@@ -153,6 +168,7 @@ class LLMOrchestrator:
             wants_table_booking=wants_table_booking,
             wants_buffet=wants_buffet,
         )
+
 
     async def rerank_candidates(
         self,
