@@ -104,7 +104,7 @@ class LLMOrchestrator:
 
         # Cuisines (Heuristic)
         cuisines = []
-        common_cuisines = ["north indian", "south indian", "chinese", "italian", "thai", "asian", "cafe", "desserts", "continental", "mexican"]
+        common_cuisines = ["north indian", "south indian", "chinese", "italian", "thai", "asian", "cafe", "desserts", "continental", "mexican", "pizza", "burger", "biryani"]
         for word in common_cuisines:
             if word in lowered:
                 cuisines.append(word)
@@ -115,7 +115,7 @@ class LLMOrchestrator:
         
         # Check for range format like "1000-1500" or "1000 to 1500"
         import re
-        price_ranges = re.findall(r"(\d{3,})\s*(?:-|to)\s*(\d{3,})", lowered)
+        price_ranges = re.findall(r"(\d{3,})\s*(?:-|to|and)\s*(\d{3,})", lowered)
         if price_ranges:
             try:
                 p1, p2 = map(int, price_ranges[0])
@@ -124,6 +124,11 @@ class LLMOrchestrator:
             except ValueError:
                 pass
         
+        # Check for "under 1500" or "below 500"
+        under_price = re.findall(r"(?:under|below|less than|up to)\s*(?:₹|rs\.?)?\s*(\d{3,})", lowered)
+        if under_price and not max_price_for_two:
+            max_price_for_two = int(under_price[0])
+
         if not max_price_for_two:
             if "cheap" in lowered or "budget" in lowered or "low cost" in lowered:
                 max_price_for_two = 500
@@ -134,40 +139,38 @@ class LLMOrchestrator:
 
         # Rating Hints
         import re
-        # Use word boundaries and limit range to 0.0-5.0 to avoid picking up parts of prices like 1000
-        rating_tokens = re.findall(r"\b([0-5](?:\.[0-9])?)\b", lowered)
-        ratings = []
-        for t in rating_tokens:
-            try:
-                val = float(t)
-                ratings.append(val)
-            except ValueError:
-                continue
-        
         min_rating = None
         max_rating = None
 
-        # Check for specific "rating between X and Y" context
-        context_matches = re.findall(r"rating(?:s)?\s*(?:between|from)?\s*([0-5](?:\.[0-9])?)\s*(?:-|to|and)\s*([0-5](?:\.[0-9])?)", lowered)
-        if context_matches:
-            r1, r2 = map(float, context_matches[0])
+        # 1. Check for range format like "4-5" or "4 to 5" specifically for ratings (single digits or X.Y)
+        # This is high priority if followed by "star" or "rating"
+        rating_range_matches = re.findall(r"\b([0-5](?:\.[0-9])?)\s*(?:-|to|and)\s*([0-5](?:\.[0-9])?)\s*(?:star|rating)", lowered)
+        
+        # 2. Check for "rating between/from X and Y"
+        if not rating_range_matches:
+            rating_range_matches = re.findall(r"rating(?:s)?\s*(?:between|from)?\s*([1-5](?:\.[0-9])?)\s*(?:-|to|and)\s*([1-5](?:\.[0-9])?)", lowered)
+
+        # 3. Check for specific range format like "between 4 and 5" even without "rating" keyword
+        if not rating_range_matches:
+            rating_range_matches = re.findall(r"between\s*([1-5](?:\.[0-9])?)\s*(?:-|to|and)\s*([1-5](?:\.[0-9])?)", lowered)
+
+        if rating_range_matches:
+            r1, r2 = map(float, rating_range_matches[0])
             min_rating = min(r1, r2)
             max_rating = max(r1, r2)
-        elif len(ratings) >= 2 and ("between" in lowered or "rating" in lowered):
-            # If we have multiple numbers and range words, assume the last two are ratings if they come after price
-            # For simplicity, if we have 4 and 5, take them.
-            if any(r >= 3.0 for r in ratings): # Heuristic: ratings are usually high
-                valid_ratings = [r for r in ratings if 1.0 <= r <= 5.0]
-                if len(valid_ratings) >= 2:
-                    min_rating = min(valid_ratings)
-                    max_rating = max(valid_ratings)
-                elif valid_ratings:
-                    min_rating = valid_ratings[0]
-        elif ratings:
-            # Take the first plausible rating
-            plausible = [r for r in ratings if 1.0 <= r <= 5.0]
-            if plausible:
-                min_rating = plausible[0]
+        else:
+            # 4. Use word boundaries and limit range to 1.0-5.0 to avoid picking up parts of prices like 1000
+            rating_tokens = re.findall(r"\b([1-5](?:\.[0-9])?)\b", lowered)
+            ratings = [float(t) for t in rating_tokens]
+            
+            if len(ratings) >= 2:
+                # If we have two plausible ratings and NO clear price context for them
+                # (since 1000-2000 is already parsed as price)
+                min_rating = min(ratings[-2:])
+                max_rating = max(ratings[-2:])
+            elif ratings:
+                min_rating = ratings[0]
+
 
 
         wants_online_order = True if any(x in lowered for x in ["delivery", "online order", "zomato"]) else None
