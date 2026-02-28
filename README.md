@@ -1,6 +1,10 @@
 # AI Restaurant Scout 🕵️‍♂️🍴
 
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-blue?logo=vercel)](https://nextleap-ai-project-1.vercel.app/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/manishkumar98/nextleap-ai-project-1)
+
 Experience hyper-personalized dining recommendations powered by Groq LLM and the Zomato dataset.
+
 
 ## ✨ Features
 
