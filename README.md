@@ -1,9 +1,11 @@
 # AI Restaurant Scout 🕵️‍♂️🍴
 
-[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-blue?logo=vercel)](https://nextleap-ai-project-1.vercel.app/)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-Live_Dashboard-FF4B4B?logo=streamlit)](https://nextleap-ai-project-1-hbyrwppoqtnmbfma2eydgl.streamlit.app/)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Frontend-blue?logo=vercel)](https://nextleap-ai-project-1.vercel.app/)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/manishkumar98/nextleap-ai-project-1)
 
 Experience hyper-personalized dining recommendations powered by Groq LLM and the Zomato dataset.
+
 
 
 ## ✨ Features
@@ -78,9 +80,14 @@ Run the test suite using pytest:
 pytest tests/
 ```
 
-## 🌐 Deployment Guide
+## 🌐 Deployment Guide (Live)
+
+The system is now live and can be accessed here:
+-   **AI Dashboard (Streamlit)**: [Go to App](https://nextleap-ai-project-1-hbyrwppoqtnmbfma2eydgl.streamlit.app/)
+-   **API & Frontend (Vercel)**: [Go to App](https://nextleap-ai-project-1.vercel.app/)
 
 This project is designed for a dual-deployment strategy:
+
 1.  **Backend Logic & AI Dashboard**: Hosted on **Streamlit Cloud**.
 2.  **Modern UI Frontend**: Hosted on **Vercel**.
 
