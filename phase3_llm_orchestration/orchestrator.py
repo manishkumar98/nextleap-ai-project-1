@@ -134,23 +134,41 @@ class LLMOrchestrator:
 
         # Rating Hints
         import re
-        rating_tokens = re.findall(r"(\d\.\d|\d)", lowered)
+        # Use word boundaries and limit range to 0.0-5.0 to avoid picking up parts of prices like 1000
+        rating_tokens = re.findall(r"\b([0-5](?:\.[0-9])?)\b", lowered)
         ratings = []
         for t in rating_tokens:
             try:
                 val = float(t)
-                if 0.0 <= val <= 5.0:
-                    ratings.append(val)
+                ratings.append(val)
             except ValueError:
                 continue
         
-        min_rating = ratings[0] if ratings else None
-        max_rating = ratings[1] if len(ratings) > 1 else None
-        
-        if "between" in lowered or "to" in lowered or "from" in lowered:
-            if len(ratings) >= 2:
-                min_rating = min(ratings)
-                max_rating = max(ratings)
+        min_rating = None
+        max_rating = None
+
+        # Check for specific "rating between X and Y" context
+        context_matches = re.findall(r"rating(?:s)?\s*(?:between|from)?\s*([0-5](?:\.[0-9])?)\s*(?:-|to|and)\s*([0-5](?:\.[0-9])?)", lowered)
+        if context_matches:
+            r1, r2 = map(float, context_matches[0])
+            min_rating = min(r1, r2)
+            max_rating = max(r1, r2)
+        elif len(ratings) >= 2 and ("between" in lowered or "rating" in lowered):
+            # If we have multiple numbers and range words, assume the last two are ratings if they come after price
+            # For simplicity, if we have 4 and 5, take them.
+            if any(r >= 3.0 for r in ratings): # Heuristic: ratings are usually high
+                valid_ratings = [r for r in ratings if 1.0 <= r <= 5.0]
+                if len(valid_ratings) >= 2:
+                    min_rating = min(valid_ratings)
+                    max_rating = max(valid_ratings)
+                elif valid_ratings:
+                    min_rating = valid_ratings[0]
+        elif ratings:
+            # Take the first plausible rating
+            plausible = [r for r in ratings if 1.0 <= r <= 5.0]
+            if plausible:
+                min_rating = plausible[0]
+
 
         wants_online_order = True if any(x in lowered for x in ["delivery", "online order", "zomato"]) else None
         wants_table_booking = True if any(x in lowered for x in ["date", "table booking", "book", "reserve"]) else None
