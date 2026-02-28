@@ -74,7 +74,15 @@ Run the test suite using pytest:
 pytest tests/
 ```
 
+## 🌐 Deployment
+
+The system is deployed and accessible via the following links:
+
+-   **Backend API (Vercel)**: [https://nextleap-ai-project-1.vercel.app/](https://nextleap-ai-project-1.vercel.app/)
+-   **GitHub Repository**: [https://github.com/manishkumar98/nextleap-ai-project-1](https://github.com/manishkumar98/nextleap-ai-project-1)
+
 ## 🛠️ Built With
+
 
 - **Backend**: FastAPI, SQLAlchemy, Pydantic
 - **AI**: Groq LLM (Llama 3)
