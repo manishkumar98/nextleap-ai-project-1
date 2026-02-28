@@ -78,12 +78,37 @@ Run the test suite using pytest:
 pytest tests/
 ```
 
-## 🌐 Deployment
+## 🌐 Deployment Guide
 
-The system is deployed and accessible via the following links:
+This project is designed for a dual-deployment strategy:
+1.  **Backend Logic & AI Dashboard**: Hosted on **Streamlit Cloud**.
+2.  **Modern UI Frontend**: Hosted on **Vercel**.
 
--   **Backend API (Vercel)**: [https://nextleap-ai-project-1.vercel.app/](https://nextleap-ai-project-1.vercel.app/)
--   **GitHub Repository**: [https://github.com/manishkumar98/nextleap-ai-project-1](https://github.com/manishkumar98/nextleap-ai-project-1)
+### 1. Deploying Backend (logic) on Streamlit Cloud
+1.  **Push to GitHub**: Ensure the latest code is on your main branch.
+2.  **Connect to Streamlit**:
+    -   Go to [share.streamlit.io](https://share.streamlit.io/).
+    -   Click **"New app"** and select your repository (`nextleap-ai-project-1`).
+    -   Set **Main file path** to `streamlit_app.py`.
+3.  **Configure Secrets**:
+    -   In the app settings, go to **Secrets** and add:
+        ```toml
+        GROQ_API_KEY = "your_groq_api_key_here"
+        USE_LLM_BY_DEFAULT = "1"
+        ```
+    -   Streamlit Cloud automatically handles the `zomato_restaurants.db` (it is committed to the repo).
+
+### 2. Deploying Frontend on Vercel
+1.  **Push to GitHub**: (Already done).
+2.  **Connect to Vercel**:
+    -   Go to [Vercel Dashboard](https://vercel.com/dashboard).
+    -   Click **"Add New"** -> **"Project"**.
+    -   Import your repository.
+3.  **Configure Environment Variables**:
+    -   Go to Settings -> Environment Variables.
+    -   Add `GROQ_API_KEY` (required for the FastAPI backend running on Vercel).
+4.  **Deploy**: Vercel will use the `vercel.json` to automatically configure the static frontend and the Python serverless functions.
+
 
 ## 🛠️ Built With
 
